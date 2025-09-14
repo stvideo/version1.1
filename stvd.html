@@ -1,210 +1,58 @@
-<!doctype html>
-<html lang="en" dir="ltr">
+<!DOCTYPE html>
+<html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Hacker Theme — Secret Overlay</title>
-  <style>
-    :root{--bg:#050505;--neon:#00ff6a;font-family:"Consolas","Courier New",monospace}
-    html,body{height:100%;margin:0;background:var(--bg);color:var(--neon)}
-    .matrix{position:fixed;inset:0;overflow:hidden;z-index:0;background:radial-gradient(ellipse at center, rgba(0,0,0,0) 0%, rgba(0,0,0,0.4) 70%), linear-gradient(180deg,#021202 0%, #000 100%)}
-    .column{position:absolute;top:-120%;width:12px;opacity:0.85;filter:blur(0.2px);animation:fall linear infinite;color:var(--neon);font-size:12px;line-height:12px;white-space:nowrap}
-    @keyframes fall{to{transform:translateY(220%)}}
-    .scanline{position:fixed;inset:0;pointer-events:none;background-image:linear-gradient(rgba(0,0,0,0) 50%, rgba(0,0,0,0.06) 50%);background-size:100% 4px;mix-blend-mode:overlay;z-index:2}
-
-    .center{position:relative;z-index:3;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
-    .card{width:min(960px,94vw);backdrop-filter:blur(6px);background:linear-gradient(180deg, rgba(0,0,0,0.5), rgba(0,0,0,0.6));border-radius:12px;padding:28px;border:1px solid rgba(0,255,106,0.06);box-shadow:0 8px 40px rgba(0,0,0,0.6), inset 0 0 30px rgba(0,255,106,0.02)}
-
-    .title-wrap{display:flex;justify-content:center;position:relative}
-    h1{font-size:22px;margin:0;color:var(--neon);text-align:center;position:relative;cursor:default;user-select:none}
-    h1::before,h1::after{content:attr(data-text);position:absolute;left:0;right:0;top:0;opacity:0.12;pointer-events:none}
-    h1::before{transform:translate(2px,-2px);filter:blur(1px)}
-    h1::after{transform:translate(-2px,2px);filter:blur(2px)}
-    h1.glitch{animation:glow .9s infinite}
-    @keyframes glow{0%{text-shadow:0 0 8px rgba(0,255,106,0.18)}50%{text-shadow:0 0 16px rgba(0,255,106,0.35)}100%{text-shadow:0 0 8px rgba(0,255,106,0.18)}}
-    .title-scan{position:absolute;left:0;right:0;height:6px;top:50%;transform:translateY(-50%);pointer-events:none;background:linear-gradient(90deg, transparent, rgba(0,255,106,0.06), transparent);mix-blend-mode:screen;opacity:0;transition:opacity .2s}
-    h1:hover + .title-scan{opacity:1;animation:slide 800ms linear infinite}
-    @keyframes slide{from{transform:translateX(-110%)}to{transform:translateX(110%)}}
-
-    .lead{color:#9fffc9;text-align:center;margin:12px 0 0}
-
-    .hidden{display:none}
-    .videos{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:18px}
-    video{width:100%;height:160px;object-fit:cover;border-radius:8px;border:1px solid rgba(0,255,106,0.06);background:#000}
-    .link-row{display:flex;justify-content:center;margin-top:14px;gap:12px}
-
-    @media (max-width:720px){.videos{grid-template-columns:1fr}video{height:200px}}
-
-    /* invisible small corner marker (fully hidden visually but kept for dev) */
-    .corner{position:fixed;left:6px;bottom:6px;width:10px;height:10px;opacity:0;pointer-events:none}
-  </style>
-  <script>
-  // يمنع كلك يمين القاعدة
-  window.addEventListener('contextmenu', function(e){
-    e.preventDefault();
-  });
-
-  // بعض متصفحات قد تستخدم middle/right button على mousedown — نمنعها كمان
-  window.addEventListener('mousedown', function(e){
-    // زر يمين = 2
-    if (e.button === 2) {
-      e.preventDefault();
-      e.stopPropagation();
-    }
-  });
-
-  // يمنع تركيبات المفاتيح الشائعة لفتح الفحص أو مشاهدة المصدر
-  window.addEventListener('keydown', function(e){
-    // مفاتيح/توليفات شائعة:
-    // F12, Ctrl+Shift+I/J/C/K, Ctrl+U, Ctrl+S   — مع دعم mac (metaKey)
-    const key = (e.key || '').toLowerCase();
-    const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
-
-    // F12
-    if (e.key === 'F12' || e.keyCode === 123) {
-      e.preventDefault(); e.stopPropagation(); return false;
-    }
-
-    // Ctrl/Cmd + Shift + [I,J,C,K]  (فتح DevTools / inspect / console / elements)
-    if ((e.ctrlKey || e.metaKey) && e.shiftKey && ['i','j','c','k'].includes(key)) {
-      e.preventDefault(); e.stopPropagation(); return false;
-    }
-
-    // Ctrl/Cmd + U  (view-source)
-    if ((e.ctrlKey || e.metaKey) && key === 'u') {
-      e.preventDefault(); e.stopPropagation(); return false;
-    }
-
-    // Ctrl/Cmd + S  (save page) — اختياري
-    if ((e.ctrlKey || e.metaKey) && key === 's') {
-      e.preventDefault(); e.stopPropagation(); return false;
-    }
-
-    // Ctrl+Shift+S (بعض المتصفحات)
-    if ((e.ctrlKey || e.metaKey) && e.shiftKey && key === 's') {
-      e.preventDefault(); e.stopPropagation(); return false;
-    }
-  }, true);
-</script>
-<script>
-  window.addEventListener('keydown', function (e) {
-    // تجاهل لو المستخدم يكتب في حقل نصي أو محتوى قابل للتحرير
-    const tag = (e.target && e.target.tagName) ? e.target.tagName.toLowerCase() : '';
-    const isEditable = tag === 'input' || tag === 'textarea' || e.target.isContentEditable;
-    if (isEditable) return;
-
-    if (e.key === 'ArrowRight' || e.key === 'Right') {
-      e.preventDefault();
-      // محاولة العودة للصفحة السابقة أولًا
-      try {
-        if (window.history.length > 1) {
-          window.history.back();
-          return;
-        }
-      } catch (err) { /* ignore */ }
-
-      // محاولة إغلاق التبويب (ينجح فقط إذا فتحته عبر window.open من نفس السكربت)
-      try {
-        window.close();
-        // بعد ثوانٍ قليلة، لو ما انقفل التبويب، اكمل إلى fallback
-        setTimeout(function(){
-          // Fallback: افتح صفحة فارغة أو أي رابط تختاره
-          window.location.href = 'about:blank';
-        }, 300);
-      } catch (err) {
-        // Fallback مباشرة
-        window.location.href = 'about:blank';
-      }
-    }
-  }, true);
-</script>
-
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Videos-Phone</title>
+<style>
+  body {
+    margin:0;
+    font-family:"Consolas","Courier New",monospace;
+    background-color:#001100; /* خلفية داكنة مع خضرة */
+    color:#00ff6a;
+  }
+  h1 {
+    text-align:center;
+    margin:20px 0;
+    font-size:28px;
+    text-shadow: 0 0 8px #00ff6a, 0 0 16px #00ff6a;
+  }
+  .videos {
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(250px,1fr));
+    gap:16px;
+    max-width:960px;
+    margin:20px auto;
+    padding:0 10px;
+  }
+  video {
+    width:100%;
+    border:2px solid #00ff6a;
+    border-radius:8px;
+    background:#000;
+    box-shadow:0 0 12px #00ff6a;
+  }
+  .card {
+    padding:10px;
+    background: rgba(0,255,106,0.05);
+    border-radius:8px;
+    border:1px solid #00ff6a;
+    box-shadow: 0 0 10px #00ff6a;
+  }
+</style>
 </head>
 <body>
-  <div class="matrix" id="matrix"></div>
-  <div class="scanline"></div>
-
-  <div class="center">
-    <div class="card" id="card">
-      <div class="title-wrap">
-        <h1 id="mainTitle" data-text="You must pass the interface">You must pass the interface</h1>
-        <div class="title-scan" aria-hidden="true"></div>
-      </div>
-      <p class="lead">(Private interface)</p>
-
-      <!-- Secret area starts hidden and only revealed by the secret keys -->
-      <div id="secret" class="hidden">
-        <p style="text-align:center;margin:6px 0 0;color:#bfffd6;font-size:13px">Welcome — authorized access</p>
-        <div class="videos" id="videos">
-          <video controls preload="metadata" src="https://v1.cdnde.com/x1/upload_f27c9ee13342ef5f73e5aa5dbe96b9a6/44090/JOPORN_NET_44090_480p.mp4"></video>
-          <video controls preload="metadata" src="https://v5.cdnde.com/x5/upload_c5e2067acd5b89dd22bb94f31a3ead3d/44057/JOPORN_NET_44057_480p.mp4"></video>
-          <video controls preload="metadata" src="https://v6.cdnde.com/x6/upload_71393040e3c5d7f25be71e2c962eca11/44083/JOPORN_NET_44083_480p.mp4"></video>
-        </div>
-       
-      </div>
-
-    </div>
+<h1>Videos</h1>
+<div class="videos">
+  <div class="card">
+    <video controls preload="metadata" src="https://v1.cdnde.com/x1/upload_f27c9ee13342ef5f73e5aa5dbe96b9a6/44090/JOPORN_NET_44090_480p.mp4"></video>
   </div>
-
-  <div class="corner" aria-hidden="true"></div>
-
-  <script>
-    // MATRIX effect
-    const matrix = document.getElementById('matrix');
-    const chars = '01';
-    const columns = Math.ceil(window.innerWidth / 12);
-    for(let i=0;i<columns;i++){
-      const col=document.createElement('div');col.className='column';col.style.left=(i*12)+'px';col.style.fontSize=(8+Math.random()*8)+'px';col.style.opacity=0.35+Math.random()*0.7;let len=20+Math.floor(Math.random()*60);let txt='';for(let k=0;k<len;k++) txt+=chars[Math.floor(Math.random()*chars.length)];col.textContent=txt;col.style.animationDuration=(6+Math.random()*10)+'s';col.style.animationDelay=(-Math.random()*20)+'s';matrix.appendChild(col);
-    }
-
-    // KEY COMBINATION (secret) -> only this will open the secret. No visible hint or buttons.
-    const pressed = new Set();
-    window.addEventListener('keydown', e=>{
-      let k = e.key;
-      if(k === '8' && e.shiftKey) k='*';
-      pressed.add(k);
-      checkCombo(e);
-    });
-    window.addEventListener('keyup', e=>{ pressed.delete(e.key); if(e.key==='8') pressed.delete('*'); });
-
-    function checkCombo(e){
-      const hasShift = e.shiftKey || pressed.has('Shift') || pressed.has('ShiftLeft') || pressed.has('ShiftRight');
-      if(hasShift && (pressed.has('*') || pressed.has('Multiply') || pressed.has('x')) && (pressed.has('=') || pressed.has('+'))){
-        // revealed only by pressing the secret keys
-        revealSecret();
-      }
-    }
-
-    const secret = document.getElementById('secret');
-    const mainTitle = document.getElementById('mainTitle');
-    const originalText = mainTitle.textContent;
-
-    function revealSecret(){
-      if(!secret.classList.contains('hidden')) return; // already open
-      secret.classList.remove('hidden');
-      mainTitle.textContent = 'Interface passed — Access granted';
-      mainTitle.setAttribute('data-text','Interface passed — Access granted');
-      mainTitle.classList.add('glitch');
-      flashBorder();
-      setTimeout(()=>{mainTitle.classList.remove('glitch');},1200);
-    }
-
-    function flashBorder(){
-      const card=document.querySelector('.card');card.style.boxShadow='0 0 40px rgba(0,255,106,0.9)';setTimeout(()=>{card.style.boxShadow='0 8px 40px rgba(0,0,0,0.6), inset 0 0 30px rgba(0,255,106,0.02)';},420);
-    }
-
-    // HOVER GLITCH: only visual effect on hover (no click)
-    let hoverTimer=null;
-    mainTitle.addEventListener('mouseenter', ()=>{startGlitchHover();});
-    mainTitle.addEventListener('mouseleave', ()=>{stopGlitchHover();});
-    function randomChar(){const pool='01ABCDEFGHJKLMNPQRSTUVWXYZ0123456789@#$%&*+=';return pool[Math.floor(Math.random()*pool.length)];}
-    function startGlitchHover(){let i=0;const max=8;clearInterval(hoverTimer);hoverTimer=setInterval(()=>{let text=mainTitle.textContent;let arr=text.split('');for(let j=0;j<Math.min(arr.length,3);j++){const idx=Math.floor(Math.random()*arr.length);arr[idx]=randomChar();}mainTitle.textContent=arr.join('');i++;if(i>max){stopGlitchHover();}},60);mainTitle.classList.add('glitch');}
-    function stopGlitchHover(){clearInterval(hoverTimer);hoverTimer=null;mainTitle.textContent = originalText;mainTitle.setAttribute('data-text', originalText);mainTitle.classList.remove('glitch');}
-
-    // Resize handler
-    let resizeTimer;window.addEventListener('resize', ()=>{clearTimeout(resizeTimer);resizeTimer=setTimeout(()=>{matrix.innerHTML='';const cols=Math.ceil(window.innerWidth/12);for(let i=0;i<cols;i++){const col=document.createElement('div');col.className='column';col.style.left=(i*12)+'px';col.style.fontSize=(8+Math.random()*8)+'px';col.style.opacity=0.35+Math.random()*0.7;let txt='';let len=20+Math.floor(Math.random()*60);for(let k=0;k<len;k++) txt+=chars[Math.floor(Math.random()*chars.length)];col.textContent=txt;col.style.animationDuration=(6+Math.random()*10)+'s';col.style.animationDelay=(-Math.random()*20)+'s';matrix.appendChild(col);} },180);});
-
-    // NOTE: replace video1.mp4/video2.mp4/video3.mp4 and secret-file.mp4 with your real URLs/paths.
-  </script>
+  <div class="card">
+    <video controls preload="metadata" src="https://v5.cdnde.com/x5/upload_c5e2067acd5b89dd22bb94f31a3ead3d/44057/JOPORN_NET_44057_480p.mp4"></video>
+  </div>
+  <div class="card">
+    <video controls preload="metadata" src="https://v6.cdnde.com/x6/upload_71393040e3c5d7f25be71e2c962eca11/44083/JOPORN_NET_44083_480p.mp4"></video>
+  </div>
+</div>
 </body>
 </html>
